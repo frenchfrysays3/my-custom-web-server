@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Admin page</title>
+        <link rel="stylesheet" href="/static/css/style.css" type="text/css">
+        <script src="/static/js/navigation.js"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+        <h1>Admin tools</h1>
+
+        <h2>Maintanence</h2>
+        <button id="maintanence-toggle">Loading maintanence status...</button>
+
+        <h2>Users</h2>
+
+        <div class="search-container">
+            <input type="text" id="userSearch" placeholder="Search by username or ID..." oninput="filterUsers()">
+        </div>
+
+        <div id="user-list-container"></div>
+
+        <script src="/static/js/admin.js"></script>
+    </body>
+</html>
