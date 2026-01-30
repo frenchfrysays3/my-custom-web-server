@@ -53,3 +53,13 @@ button {
     border: 2px dashed #444;
     color: #888;
 }
+
+.reset-btn {
+    background-color: #f39c12; /* Orange */
+    color: white;
+    margin-left: 5px;
+}
+
+.reset-btn:hover {
+    background-color: #e67e22;
+}

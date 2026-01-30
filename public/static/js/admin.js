@@ -1,21 +1,21 @@
 async function checkForMaintenance() {
     // 1. Correct the ID to match your HTML exactly
-    const mainBtn = document.getElementById('maintanence-toggle');
+    const mainBtn = document.getElementById('maintenance-toggle');
 
     async function refreshStatus() {
         try {
             // 2. Correct the URL to match your server route
-            const response = await fetch('/admin/maintanence', {
+            const response = await fetch('/admin/maintenance', {
                 credentials: "same-origin"
             });
             const data = await response.json();
 
             // 3. Update the button text immediately
-            mainBtn.innerText = data.maintanence ? 
-                'Deactivate maintanence mode' : 
-                'Activate maintanence mode';
+            mainBtn.innerText = data.maintenance ? 
+                'Deactivate maintenance mode' : 
+                'Activate maintenance mode';
             
-            return data.maintanence;
+            return data.maintenance;
         } catch (e) {
             console.error('Fetch error:', e);
             mainBtn.innerText = 'Error loading status';
@@ -27,7 +27,7 @@ async function checkForMaintenance() {
 
     // 4. Set up the click listener ONCE
     mainBtn.onclick = async () => {
-        const response = await fetch('/admin/maintanence', {
+        const response = await fetch('/admin/maintenance', {
             method: "POST",
             credentials: 'same-origin'
         });
@@ -36,7 +36,7 @@ async function checkForMaintenance() {
             const data = await response.json();
             // 5. Re-run the refresh logic to update the button text
             await refreshStatus(); 
-            alert(`Maintanence mode is now ${data.maintanence ? 'ON' : 'OFF'}`);
+            alert(`maintenance mode is now ${data.maintenance ? 'ON' : 'OFF'}`);
         }
     };
 }
@@ -56,6 +56,11 @@ async function loadUserList() {
 // New helper function to draw the cards
 function renderUserList(usersToDisplay) {
     const container = document.getElementById('user-list-container');
+    const countDisplay = document.getElementById('user-count'); // Add this span in HTML
+    
+    if (countDisplay) {
+        countDisplay.innerText = `Showing ${usersToDisplay.length} of ${allUsers.length} users`;
+    }
     
     // Check if any users matched the search
     if (usersToDisplay.length === 0) {
@@ -78,6 +83,7 @@ function renderUserList(usersToDisplay) {
                 </div>
                 <div class="user-actions">
                     <button onclick="toggleRole('${user.username}')" class="promote-btn">${toggleText}</button>
+                    <button onClick="resetPassword('${user.username}')" class="reset-btn">Reset PW</button>
                     <button onclick="deleteUser('${user.username}')" class="delete-btn">Delete</button>
                 </div>
             </div>
@@ -134,6 +140,35 @@ async function toggleRole(id) {
         }
     } catch (e) {
         console.error("Toggle failed:", e);
+    }
+}
+
+async function resetPassword(username) {
+    // 1. Ask the admin for the new password
+    const newPassword = prompt(`Enter new password for ${username}:`);
+    
+    // 2. Security check: make sure it's not empty and at least 6 chars
+    if (!newPassword) return; 
+    if (newPassword.length < 6) {
+        alert("Password must be at least 6 characters!");
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/admin/users/reset-password/${username}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newPassword }) // Send the custom password in the body
+        });
+
+        if (response.ok) {
+            alert(`Success! Password for ${username} has been updated.`);
+        } else {
+            const result = await response.json();
+            alert("Error: " + result.error);
+        }
+    } catch (e) {
+        console.error("Reset failed:", e);
     }
 }
 

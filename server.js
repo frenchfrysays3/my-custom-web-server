@@ -61,7 +61,7 @@ app.use((req, res, next) => {
 
     let logColor = chalk.green;
     if (req.originalUrl.includes('/admin')) logColor = chalk.yellow;
-    if (state.maintanence) logColor = chalk.magenta;
+    if (state.maintenance) logColor = chalk.magenta;
 
     console.log(
         logColor(`[${timestamp}] ${user} -> ${req.method} ${req.originalUrl}`)
@@ -70,6 +70,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 const checkIfLoggedIn = (req, res, next) => {
     if (req.session.loggedIn) {
@@ -96,7 +97,7 @@ app.use((req, res, next) => {
 
     // 3. Logic: Block if Maintenance is ON, User is NOT Admin, and route is NOT whitelisted
     if (state.maintenance && req.session.role !== 'admin' && !isAllowed) {
-        return res.status(503).sendFile(path.join(__dirname, 'public', 'maintanence.html'));
+        return res.status(503).sendFile(path.join(__dirname, 'public', 'maintenance.html'));
     }
     
     next();
@@ -298,16 +299,16 @@ app.get('/admin', checkForAdmin, (req, res) => {
     res.status(200).sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-app.post('/admin/maintanence', checkForAdmin, (req, res) => {
-    state.maintanence = !state.maintanence;
+app.post('/admin/maintenance', checkForAdmin, (req, res) => {
+    state.maintenance = !state.maintenance;
 
     fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
 
-    res.json({ maintanence: state.maintanence });
+    res.json({ maintenance: state.maintenance });
 });
 
-app.get('/admin/maintanence', checkForAdmin, (req, res) => {
-    res.json({ maintanence: state.maintanence });
+app.get('/admin/maintenance', checkForAdmin, (req, res) => {
+    res.json({ maintenance: state.maintenance });
 });
 
 app.get('/api/admin/users', checkForAdmin, (req, res) => {
@@ -339,6 +340,11 @@ app.delete('/api/admin/users/:id', checkForAdmin, (req, res) => {
         const rawData = fs.readFileSync(usersFile, 'utf8');
         let usersData = JSON.parse(rawData);
 
+        if (targetId === 'lucas') {
+            console.log(`${req.session.userID} attempted to delete superadmin. Aborting.`);
+            return res.json({ success: false });
+        }
+
         // LOGIC: Check if the ID exists as a KEY in the object
         if (usersData[targetId]) {
             delete usersData[targetId]; // Remove the entry
@@ -363,6 +369,11 @@ app.post('/api/admin/users/toggle-role/:id', checkForAdmin, (req, res) => {
         const rawData = fs.readFileSync(usersFile, 'utf8');
         let usersData = JSON.parse(rawData);
 
+        if (targetId === 'lucas') {
+            console.log(`${req.session.userID} attempted to delete superadmin. Aborting.`);
+            return res.json({ success: false, newRole: 'admin' });
+        }
+
         if (usersData[targetId]) {
             // Toggle logic: if they are admin, make them user. Otherwise, make them admin.
             const oldRole = usersData[targetId].role;
@@ -379,6 +390,38 @@ app.post('/api/admin/users/toggle-role/:id', checkForAdmin, (req, res) => {
         }
     } catch (err) {
         console.error("Toggle Role Error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+app.post('/api/admin/users/reset-password/:id', checkForAdmin, async (req, res) => {
+    try {
+        const targetId = req.params.id;
+        const { newPassword } = req.body;
+
+        // 1. Validation
+        if (!newPassword || newPassword.length < 6) {
+            return res.status(400).json({ error: "Password must be 6+ characters" });
+        }
+
+        // 2. Check if user exists in your global 'users' object
+        if (users[targetId]) {
+            const saltRounds = 10;
+            const hashedPW = await bcrypt.hash(newPassword, saltRounds);
+            
+            // 3. Update the global object directly
+            users[targetId].passwordHash = hashedPW;
+
+            // 4. Persist to disk so it survives a server restart
+            fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
+
+            console.log(`✅ Password updated in memory and file for: ${targetId}`);
+            res.json({ success: true });
+        } else {
+            res.status(404).json({ error: "User not found" });
+        }
+    } catch (err) {
+        console.error("Reset Error:", err);
         res.status(500).json({ error: "Server error" });
     }
 });
