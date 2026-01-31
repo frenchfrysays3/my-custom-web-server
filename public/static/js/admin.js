@@ -172,6 +172,8 @@ async function resetPassword(username) {
     }
 }
 
+setInterval(loadUserList, 3000);
+
 window.onload = () => {
     checkForMaintenance();
     loadUserList();
