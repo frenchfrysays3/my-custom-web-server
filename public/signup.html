@@ -2,11 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/css/style.css" type="text/css">
     <script src="/static/js/navigation.js"></script>
+    <script src="https://kit.fontawesome.com/f403ebf253.js" crossorigin="anonymous"></script>
     <title>Sign Up</title>
 </head>
 <body>
+    <div class="topnav" id="topnav">
+        <a href="/">Home</a>
+        <a href="/blog">Blog</a>
+        <a href="/login">Log in</a>
+        <a href="/signup">Sign up</a>
+        <a href="/logout">Logout</a>
+        <a href="javascript:void(0);" class="icon" onclick="topnav()">
+            <i class="fa-solid fa-bars"></i>
+        </a>
+    </div>
     <h1>Sign Up</h1>
     <form action="/signup" method="POST">
         <label for="username">Username:</label>
